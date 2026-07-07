@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โมเดลต้นทุนน้ำมันต่อรายได้</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F0EEE6; --surface:#FAF9F5; --card:#FFFFFF;
+    --border:#E5E2D8; --border-strong:#D8D4C7;
+    --ink:#1A1915; --ink-soft:#5C584F; --ink-faint:#8A857A;
+    --clay:#D97757; --clay-dark:#C15F3C; --clay-soft:#F6E9E2;
+    --green:#5C8A5A; --green-soft:#E8F0E6;
+    --shadow:0 1px 2px rgba(26,25,21,.04), 0 8px 24px rgba(26,25,21,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Noto Sans Thai',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+    min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased;padding:32px 16px 64px}
+  .wrap{max-width:960px;margin:0 auto}
+
+  header{display:flex;align-items:center;gap:14px}
+  .logo{width:42px;height:42px;border-radius:11px;flex:none;background:var(--clay);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(193,95,60,.35)}
+  .logo svg{width:23px;height:23px}
+  h1{font-family:'Noto Serif Thai',serif;font-weight:600;font-size:25px;letter-spacing:-.2px}
+  .sub{color:var(--ink-soft);font-size:14.5px;margin:6px 0 26px 56px}
+
+  .kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+  @media(max-width:680px){.kpis{grid-template-columns:1fr}}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+  .kpi.hero{background:linear-gradient(160deg,#FCF8F4,#F7EDE6);border-color:#EBD9CC}
+  .kpi .lab{font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:7px;margin-bottom:8px}
+  .kpi .lab .dot{width:7px;height:7px;border-radius:50%;background:var(--clay)}
+  .kpi .big{font-family:'Noto Serif Thai',serif;font-weight:700;font-size:32px;color:var(--clay-dark);
+    font-variant-numeric:tabular-nums;line-height:1.1}
+  .kpi .big small{font-size:15px;font-weight:600;color:var(--ink-soft);margin-left:3px}
+  .kpi.net .big{color:var(--green)}
+  .kpi .hint{font-size:12px;color:var(--ink-faint);margin-top:5px}
+
+  .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:20px;align-items:start}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:var(--shadow)}
+  .card h2{font-family:'Noto Serif Thai',serif;font-size:17px;font-weight:600;margin-bottom:18px;
+    display:flex;align-items:center;gap:8px}
+  .card h2 .dot{width:7px;height:7px;border-radius:50%;background:var(--clay)}
+
+  label{display:block;font-size:13.5px;font-weight:500;color:var(--ink-soft);margin:0 0 7px}
+  .field{margin-bottom:18px}
+  select,input{width:100%;font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface);
+    border:1px solid var(--border-strong);border-radius:11px;padding:12px 14px;outline:none;
+    transition:border-color .15s, box-shadow .15s, background .15s}
+  select{appearance:none;cursor:pointer;padding-right:40px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A857A' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center}
+  select:focus,input:focus{border-color:var(--clay);background:#fff;box-shadow:0 0 0 3px rgba(217,119,87,.15)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:420px){.row2{grid-template-columns:1fr}}
+  .input-suffix{position:relative}
+  .input-suffix .unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--ink-faint);font-size:13.5px;pointer-events:none}
+  .input-suffix input{padding-right:52px}
+
+  .dmy{display:grid;grid-template-columns:.7fr 1.15fr 1fr;gap:10px}
+  .manual-wrap{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:14px 16px}
+  .chk{display:flex;align-items:center;gap:9px;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink);margin:0}
+  .chk input{width:18px;height:18px;flex:none;accent-color:var(--clay);cursor:pointer;padding:0}
+  input:disabled{background:#F2F0E9;color:var(--ink-faint);cursor:not-allowed}
+
+  .sum-line{margin-top:10px;font-size:13px;color:var(--clay-dark);background:var(--clay-soft);border-radius:8px;padding:8px 12px}
+  .sum-line b{font-weight:700;font-variant-numeric:tabular-nums}
+
+  .price-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--surface);
+    border:1px solid var(--border-strong);border-radius:12px;padding:12px;margin-bottom:10px}
+  .price-add input,.price-add select{padding:9px 11px;font-size:14px}
+  .price-add #npDd{width:64px;flex:none}
+  .price-add #npMm{width:96px;flex:none}
+  .price-add #npYy{width:82px;flex:none}
+  .price-add .np-price{flex:1;min-width:110px}
+  .price-add .np-price input{padding-right:44px}
+  .btn-add{font-family:inherit;font-size:14px;font-weight:600;color:#fff;background:var(--clay);
+    border:none;border-radius:10px;padding:10px 16px;cursor:pointer;flex:none;transition:.15s;box-shadow:0 2px 6px rgba(193,95,60,.28)}
+  .btn-add:hover{background:var(--clay-dark)}
+  .np-msg{font-size:12.5px;margin:-2px 0 12px;min-height:16px;color:var(--green);font-weight:600}
+  tr.userrow td:first-child::after{content:" •";color:var(--clay)}
+  .del-x{color:var(--ink-faint);cursor:pointer;font-weight:700;padding:0 4px}
+  .del-x:hover{color:var(--clay-dark)}
+
+  .price-note{margin-top:-8px;margin-bottom:18px;font-size:12.5px;color:var(--clay-dark);
+    background:var(--clay-soft);border-radius:8px;padding:7px 11px;line-height:1.5}
+  .price-note b{font-weight:600}
+
+  .route-line{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border-strong);
+    border-radius:11px;padding:11px 14px;margin-bottom:18px;font-size:14px;color:var(--ink);font-weight:500}
+  .route-line .pin{width:9px;height:9px;border-radius:50%;flex:none}
+  .route-line .pin.from{background:var(--green)} .route-line .pin.to{background:var(--clay)}
+  .route-line #routeText{flex:1;font-weight:600}
+
+  .result{margin-top:4px;background:linear-gradient(180deg,#FCF8F4,#FAF4EE);border:1px solid #EBD9CC;border-radius:14px;padding:18px 20px}
+  .result-row{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0}
+  .result-row+.result-row{border-top:1px dashed #E6D5C7}
+  .result-row .k{font-size:14px;color:var(--ink-soft)}
+  .result-row .v{font-size:15.5px;font-weight:600;font-variant-numeric:tabular-nums}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border)}
+  th{color:var(--ink-faint);font-weight:600;font-size:11.5px}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.active td{background:var(--clay-soft);color:var(--clay-dark);font-weight:600}
+  tr.active td:first-child{border-radius:8px 0 0 8px} tr.active td:last-child{border-radius:0 8px 8px 0}
+  .scroll{max-height:340px;overflow:auto;border-radius:10px}
+  .foot{margin-top:26px;text-align:center;color:var(--ink-faint);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3v18h18"/><path d="M7 15l3-4 3 2 5-7"/>
+      </svg>
+    </div>
+    <h1>โมเดลต้นทุนน้ำมันต่อรายได้</h1>
+  </header>
+  <p class="sub">วิเคราะห์สัดส่วนต้นทุนน้ำมันเทียบกับรายได้และต่อกิโลเมตร — ราคาน้ำมันเลือกอัตโนมัติตามวันที่</p>
+
+  <!-- KPI HERO -->
+  <div class="kpis">
+    <div class="kpi hero">
+      <div class="lab"><span class="dot"></span>ต้นทุนน้ำมัน / รายได้</div>
+      <div class="big"><span id="kPct">0.0</span><small>%</small></div>
+      <div class="hint" id="kPctHint">ค่าน้ำมัน ÷ รายได้</div>
+    </div>
+    <div class="kpi hero">
+      <div class="lab"><span class="dot"></span>ต้นทุนน้ำมัน / กม.</div>
+      <div class="big"><span id="kPerKm">0.00</span><small>บาท/กม.</small></div>
+      <div class="hint" id="kPerKmHint">ค่าน้ำมัน ÷ ระยะทาง</div>
+    </div>
+    <div class="kpi net">
+      <div class="lab"><span class="dot" style="background:var(--green)"></span>รายได้สุทธิ (หักน้ำมัน)</div>
+      <div class="big"><span id="kNet">0.00</span><small>บาท</small></div>
+      <div class="hint" id="kNetHint">รายได้ − ค่าน้ำมัน</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- INPUT -->
+    <div class="card">
+      <h2><span class="dot"></span>ข้อมูลนำเข้า</h2>
+
+      <div class="field">
+        <label>วันที่ <span style="color:var(--ink-faint);font-weight:400">· วัน / เดือน / ปี (พ.ศ.)</span></label>
+        <div class="dmy">
+          <input id="dd" type="number" min="1" max="31" placeholder="วัน" aria-label="วัน">
+          <select id="mm" aria-label="เดือน"></select>
+          <select id="yy" aria-label="ปี"></select>
+        </div>
+        <div class="price-note" id="priceNote"></div>
+      </div>
+
+      <div class="field manual-wrap">
+        <label class="chk">
+          <input id="manualOn" type="checkbox">
+          <span>กำหนดราคาน้ำมันเอง (Manual)</span>
+        </label>
+        <div class="input-suffix" style="margin-top:9px">
+          <input id="manualPrice" type="number" min="0" step="0.01" disabled>
+          <span class="unit">บาท/ลิตร</span>
+        </div>
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:6px">ติ๊กเพื่อใช้ราคาที่กรอกเอง แทนราคาตามวันที่</div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="origin">สาขา (ต้นทาง)</label>
+          <select id="origin"></select>
+        </div>
+        <div class="field">
+          <label for="dest">จุดลง (ปลายทาง)</label>
+          <select id="dest"></select>
+        </div>
+      </div>
+      <div class="route-line" id="routeLine">
+        <span class="pin from"></span><span id="routeText">–</span><span class="pin to"></span>
+      </div>
+
+      <div class="field">
+        <label for="vehicle">ชนิดรถ</label>
+        <select id="vehicle"></select>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="distance">ระยะทาง <span style="color:var(--ink-faint);font-weight:400">· เติมอัตโนมัติ</span></label>
+          <div class="input-suffix"><input id="distance" type="number" min="0" step="1" placeholder="0"><span class="unit">กม.</span></div>
+        </div>
+        <div class="field">
+          <label for="trip">รูปแบบ</label>
+          <select id="trip"><option value="1">เที่ยวเดียว</option><option value="2">ไป–กลับ</option></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="revenue">รายได้</label>
+        <div class="input-suffix"><input id="revenue" type="number" min="0" step="100" placeholder="0"><span class="unit">บาท</span></div>
+      </div>
+
+      <div class="field" style="margin-bottom:0">
+        <label for="costMode">ค่าน้ำมันรวม</label>
+        <select id="costMode">
+          <option value="auto">คำนวณอัตโนมัติ (ระยะทาง × อัตรา × ราคา)</option>
+          <option value="manual">กำหนดค่าน้ำมันรวมเอง (Manual)</option>
+          <option value="split">แยก: ต้นทุนปกติ + สูญเปล่า</option>
+        </select>
+
+        <div id="modeManual" class="mode-box" style="display:none">
+          <div class="input-suffix" style="margin-top:10px"><input id="costManual" type="number" min="0" step="1" placeholder="ค่าน้ำมันรวม"><span class="unit">บาท</span></div>
+        </div>
+
+        <div id="modeSplit" class="mode-box" style="display:none">
+          <div class="row2" style="margin-top:10px">
+            <div><label for="costNormal">ต้นทุนค่าน้ำมันปกติ</label>
+              <div class="input-suffix"><input id="costNormal" type="number" min="0" step="1"><span class="unit">บาท</span></div></div>
+            <div><label for="costWaste">ต้นทุนค่าน้ำมันสูญเปล่า</label>
+              <div class="input-suffix"><input id="costWaste" type="number" min="0" step="1" value="0"><span class="unit">บาท</span></div></div>
+          </div>
+          <div class="sum-line" id="splitSum">ปกติ + สูญเปล่า = <b>–</b> บาท</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN + PRICE TABLE -->
+    <div class="card">
+      <h2><span class="dot"></span>รายละเอียดการคำนวณ</h2>
+      <div class="result">
+        <div class="result-row"><span class="k">ราคาน้ำมัน ณ วันที่</span><span class="v" id="rPrice">–</span></div>
+        <div class="result-row"><span class="k">อัตราสิ้นเปลือง</span><span class="v" id="rRate">–</span></div>
+        <div class="result-row"><span class="k">ระยะทางรวม</span><span class="v" id="rDist">–</span></div>
+        <div class="result-row"><span class="k">น้ำมันที่ใช้</span><span class="v" id="rLiters">–</span></div>
+        <div class="result-row" id="rowNormal" style="display:none"><span class="k">• ต้นทุนปกติ</span><span class="v" id="rNormal">–</span></div>
+        <div class="result-row" id="rowWaste" style="display:none"><span class="k">• ต้นทุนสูญเปล่า</span><span class="v" id="rWaste">–</span></div>
+        <div class="result-row"><span class="k">ค่าน้ำมันรวม</span><span class="v" id="rCost" style="color:var(--clay-dark)">–</span></div>
+        <div class="result-row"><span class="k">รายได้</span><span class="v" id="rRev">–</span></div>
+      </div>
+
+      <h2 style="margin:22px 0 12px"><span class="dot"></span>ตารางราคาน้ำมัน</h2>
+
+      <div class="price-add">
+        <input id="npDd" type="number" min="1" max="31" placeholder="วัน">
+        <select id="npMm"></select>
+        <select id="npYy"></select>
+        <div class="input-suffix np-price"><input id="npPrice" type="number" min="0" step="0.01" placeholder="ราคา"><span class="unit">บ./ล.</span></div>
+        <button id="npAdd" class="btn-add" type="button">+ อัปเดตราคา</button>
+      </div>
+      <div class="np-msg" id="npMsg"></div>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>วันที่มีผล</th><th class="num">ราคา (บาท/ลิตร)</th><th></th></tr></thead>
+          <tbody id="priceBody"></tbody>
+        </table>
+      </div>
+      <p style="font-size:11.5px;color:var(--ink-faint);margin-top:10px">แถวไฮไลต์ = เรทที่ใช้กับวันที่ที่เลือก · แตะเพื่อใช้วันเริ่มเรทนั้น · <span id="npReset" style="color:var(--clay-dark);cursor:pointer;text-decoration:underline">ล้างราคาที่เพิ่มเอง</span></p>
+    </div>
+  </div>
+
+  <p class="foot">อัตราสิ้นเปลืองจาก “อัตราค่าน้ำมัน.xlsx” · เส้นทางจาก “ราคาน้ำมัน (1).xlsx” · ราคาน้ำมันตามวันที่จาก “ราคาน้ำมัน test.xlsx” · UI ธีม Claude</p>
+</div>
+
+<script>
+// ===== ราคาน้ำมันตามวันที่ (มีผลตั้งแต่วันที่ระบุจนถึงก่อนแถวถัดไป) =====
+const BASE_PRICES = [
+  ["2024-01-01",30.47],["2024-04-06",30.97],["2024-04-20",31.47],["2024-05-10",31.97],
+  ["2024-05-31",33.47],["2025-03-28",32.97],["2025-04-04",32.47],["2025-10-04",31.97],
+  ["2025-10-21",31.47],["2025-12-24",30.97],["2026-01-09",30.47],["2026-03-18",30.97],
+  ["2026-03-21",31.67],["2026-03-24",33.47],["2026-03-26",39.47],["2026-03-31",41.27],
+  ["2026-04-02",44.77],["2026-04-03",48.27],["2026-04-05",51.07],["2026-04-09",48.93],
+  ["2026-04-11",44.93],["2026-04-17",43.43],["2026-04-21",42.23],["2026-04-24",40.73],
+  ["2026-05-01",41.33],["2026-05-08",40.48],["2026-05-13",41.28],["2026-05-14",41.98],
+  ["2026-05-19",42.73],["2026-05-26",41.73],["2026-05-30",41.23],["2026-06-04",42.03]
+];
+// ราคาที่ผู้ใช้เพิ่ม/แก้เอง เก็บใน localStorage (key: date -> price)
+const LS_KEY="fuelPriceUpdates";
+function loadUpdates(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||{}; }catch(e){ return {}; } }
+function saveUpdates(o){ try{ localStorage.setItem(LS_KEY,JSON.stringify(o)); }catch(e){} }
+let USER_UPDATES=loadUpdates();
+// รวม BASE + ที่ผู้ใช้เพิ่ม แล้วเรียงตามวันที่
+function buildPrices(){
+  const map=new Map(BASE_PRICES.map(([d,p])=>[d,p]));
+  Object.entries(USER_UPDATES).forEach(([d,p])=>map.set(d,+p));
+  return [...map.entries()].sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0);
+}
+let PRICES = buildPrices();
+
+// ===== อัตราสิ้นเปลือง (ลิตร/กม.) จากไฟล์อัตราค่าน้ำมัน =====
+const RATES = [
+  ["รถเทรเลอร์",0.34602],["รถ 10 ล้อตู้เย็น",0.27027],["รถ 12 ล้อตู้เย็น",0.27027],
+  ["รถ 10 ล้อตู้แห้ง",0.25],["รถ 10 ล้อสั้น",0.25],["รถ 10 ล้อยาว",0.25],
+  ["รถ 12 ล้อตู้แห้ง",0.25],["รถ 12 ล้อคอก",0.25],["รถ 6 ล้อใหญ่",0.17986],
+  ["รถ 6 ล้อตู้เย็น",0.17986],["รถ 6 ล้อกลาง",0.16474],["รถ 6 ล้อเล็ก",0.13793]
+];
+
+// ===== เส้นทาง สาขา -> จุดลง -> ระยะทาง =====
+const ROUTES = {"เชียงใหม่":{"สี่แยกมหานาค":720,"ปากคลองตลาด":720,"สี่มุมเมือง":720,"ตลาดไท":720,"มหาชัย":760,"พุทธมณฑลสาย 2":720,"พุทธมณฑลสาย 5":720,"ราชบุรี":790,"ปากคลองตลาดใหม่":720,"ร่มเกล้า":720},"ฝาง":{"สี่แยกมหานาค":844,"ปากคลองตลาด":844,"สี่มุมเมือง":844,"ตลาดไท":844,"พุทธมณฑลสาย 2":844,"พุทธมณฑลสาย 5":844,"ราชบุรี":914,"ปากคลองตลาดใหม่":844,"ร่มเกล้า":844},"ลำพูน":{"สี่แยกมหานาค":690,"ปากคลองตลาด":690,"สี่มุมเมือง":690,"ตลาดไท":690,"มหาชัย":730,"พุทธมณฑลสาย 2":690,"พุทธมณฑลสาย 5":690,"ราชบุรี":760,"ปากคลองตลาดใหม่":690,"ร่มเกล้า":690},"ท่าลี่":{"สี่แยกมหานาค":720,"ปากคลองตลาด":720,"สี่มุมเมือง":720,"ตลาดไท":720,"มหาชัย":760,"พุทธมณฑลสาย 2":720,"พุทธมณฑลสาย 5":720,"ราชบุรี":790,"ปากคลองตลาดใหม่":720,"ร่มเกล้า":720},"ลำปาง":{"สี่แยกมหานาค":620,"ปากคลองตลาด":620,"สี่มุมเมือง":620,"ตลาดไท":620,"มหาชัย":660,"พุทธมณฑลสาย 2":620,"พุทธมณฑลสาย 5":620,"ราชบุรี":690,"ปากคลองตลาดใหม่":620,"ร่มเกล้า":620},"กองลอย":{"สี่แยกมหานาค":747,"ปากคลองตลาด":747,"สี่มุมเมือง":747,"ตลาดไท":747,"พุทธมณฑลสาย 2":747,"พุทธมณฑลสาย 5":747,"ราชบุรี":817,"ปากคลองตลาดใหม่":747,"ร่มเกล้า":747},"สันกำแพง":{"สี่แยกมหานาค":720,"ปากคลองตลาด":720,"สี่มุมเมือง":720,"ตลาดไท":720,"พุทธมณฑลสาย 2":720,"พุทธมณฑลสาย 5":720,"ปากคลองตลาดใหม่":720,"ร่มเกล้า":720},"พะเยา":{"สี่แยกมหานาค":706,"ปากคลองตลาด":706,"สี่มุมเมือง":706,"ตลาดไท":706,"มหาชัย":746,"พุทธมณฑลสาย 2":706,"พุทธมณฑลสาย 5":706,"ราชบุรี":776,"ปากคลองตลาดใหม่":706,"ร่มเกล้า":706},"ตลาดไท":{"เชียงใหม่":720,"ฝาง":844,"ลำพูน":690,"ท่าลี่":720,"ลำปาง":620,"กองลอย":747,"สันกำแพง":720,"พะเยา":706,"เชียงราย":800,"แม่สาย":860,"เชียงคำ":793,"ป่าซาง":689,"เวียงป่าเป้า":797,"น่าน":673,"แพร่":572,"เชียงดาว":782,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420},"สี่แยกมหานาค":{"เชียงใหม่":720,"ฝาง":844,"ลำพูน":690,"ท่าลี่":720,"ลำปาง":620,"กองลอย":747,"สันกำแพง":720,"พะเยา":706,"เชียงราย":800,"แม่สาย":860,"เชียงคำ":793,"ป่าซาง":689,"เวียงป่าเป้า":797,"น่าน":673,"แพร่":572,"เชียงดาว":782,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420},"พุทธมณฑลสาย 2":{"เชียงใหม่":720,"ฝาง":844,"ลำพูน":690,"ท่าลี่":720,"ลำปาง":620,"กองลอย":747,"สันกำแพง":720,"พะเยา":706,"เชียงราย":800,"แม่สาย":860,"เชียงคำ":793,"ป่าซาง":689,"เวียงป่าเป้า":797,"น่าน":673,"แพร่":572,"เชียงดาว":782,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420},"พุทธมณฑลสาย 5":{"เชียงใหม่":720,"ฝาง":844,"ลำพูน":690,"ท่าลี่":720,"ลำปาง":620,"กองลอย":747,"สันกำแพง":720,"พะเยา":706,"เชียงราย":800,"แม่สาย":860,"เชียงคำ":793,"ป่าซาง":689,"เวียงป่าเป้า":797,"น่าน":673,"แพร่":572,"เชียงดาว":782,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420},"แพร่":{"สี่แยกมหานาค":572,"ปากคลองตลาด":572,"สี่มุมเมือง":572,"ตลาดไท":572,"พุทธมณฑลสาย 2":572,"พุทธมณฑลสาย 5":572,"มหาชัย":612,"ราชบุรี":620,"ปากคลองตลาดใหม่":572,"ร่มเกล้า":572},"เวียงป่าเป้า":{"สี่แยกมหานาค":797,"ปากคลองตลาด":797,"สี่มุมเมือง":797,"ตลาดไท":797,"พุทธมณฑลสาย 2":797,"พุทธมณฑลสาย 5":797,"ราชบุรี":867,"ปากคลองตลาดใหม่":797,"ร่มเกล้า":797},"เชียงราย":{"สี่แยกมหานาค":800,"ปากคลองตลาด":800,"สี่มุมเมือง":800,"ตลาดไท":800,"มหาชัย":840,"พุทธมณฑลสาย 2":800,"พุทธมณฑลสาย 5":800,"ราชบุรี":870,"ปากคลองตลาดใหม่":800,"ร่มเกล้า":800},"แม่สาย":{"สี่แยกมหานาค":860,"ปากคลองตลาด":860,"สี่มุมเมือง":860,"ตลาดไท":860,"มหาชัย":900,"พุทธมณฑลสาย 2":860,"พุทธมณฑลสาย 5":860,"ปากคลองตลาดใหม่":860,"ร่มเกล้า":860},"เชียงคำ":{"สี่แยกมหานาค":793,"ปากคลองตลาด":793,"สี่มุมเมือง":793,"ตลาดไท":793,"พุทธมณฑลสาย 2":793,"พุทธมณฑลสาย 5":793,"ปากคลองตลาดใหม่":793,"ร่มเกล้า":793},"ป่าซาง":{"สี่แยกมหานาค":689,"ปากคลองตลาด":689,"สี่มุมเมือง":689,"ตลาดไท":689,"พุทธมณฑลสาย 2":689,"พุทธมณฑลสาย 5":689,"ราชบุรี":759,"ปากคลองตลาดใหม่":689,"ร่มเกล้า":689},"มหาชัย":{"เชียงใหม่":760,"ลำพูน":730,"ท่าลี่":760,"ลำปาง":660,"พะเยา":746,"เชียงราย":840,"แม่สาย":900,"น่าน":713,"แพร่":612,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420},"ราชบุรี":{"เชียงใหม่":790,"ฝาง":914,"ลำพูน":760,"ท่าลี่":790,"ลำปาง":690,"กองลอย":817,"พะเยา":776,"เชียงราย":870,"ป่าซาง":759,"เวียงป่าเป้า":867,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420},"น่าน":{"สี่แยกมหานาค":673,"ปากคลองตลาด":673,"สี่มุมเมือง":673,"ตลาดไท":673,"พุทธมณฑลสาย 2":673,"พุทธมณฑลสาย 5":673,"ปากคลองตลาดใหม่":673,"ร่มเกล้า":673,"มหาชัย":713},"บ้านโฮ่ง":{"สี่แยกมหานาค":690,"ปากคลองตลาด":690,"สี่มุมเมือง":690,"ตลาดไท":690,"มหาชัย":730,"พุทธมณฑลสาย 2":690,"พุทธมณฑลสาย 5":690,"ราชบุรี":760,"ปากคลองตลาดใหม่":690,"ร่มเกล้า":690},"นิ่มโลจิสติกส์":{"เชียงใหม่":720,"ฝาง":844,"ลำพูน":690,"ท่าลี่":720,"ลำปาง":620,"กองลอย":747,"สันกำแพง":720,"พะเยา":706,"เชียงราย":800,"แม่สาย":860,"เชียงคำ":793,"ป่าซาง":689,"เวียงป่าเป้า":797,"น่าน":673,"แพร่":572,"เชียงดาว":782,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420},"ร่มเกล้า":{"เชียงใหม่":720,"ฝาง":844,"ลำพูน":690,"ท่าลี่":720,"ลำปาง":620,"กองลอย":747,"สันกำแพง":720,"พะเยา":706,"เชียงราย":800,"แม่สาย":860,"เชียงคำ":793,"ป่าซาง":689,"เวียงป่าเป้า":797,"น่าน":673,"แพร่":572,"เชียงดาว":782,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420},"บ้านกาด":{"สี่แยกมหานาค":746,"ปากคลองตลาด":746,"สี่มุมเมือง":746,"ตลาดไท":746,"มหาชัย":786,"พุทธมณฑลสาย 2":746,"พุทธมณฑลสาย 5":746,"ราชบุรี":816,"ปากคลองตลาดใหม่":746,"ร่มเกล้า":746},"เชียงดาว":{"สี่แยกมหานาค":782,"ปากคลองตลาด":782,"สี่มุมเมือง":782,"ตลาดไท":782,"พุทธมณฑลสาย 2":782,"พุทธมณฑลสาย 5":782,"ปากคลองตลาดใหม่":782,"ร่มเกล้า":782},"สี่มุมเมือง":{"เชียงใหม่":720,"ฝาง":844,"ลำพูน":690,"ท่าลี่":720,"ลำปาง":620,"กองลอย":747,"สันกำแพง":720,"พะเยา":706,"เชียงราย":800,"แม่สาย":860,"เชียงคำ":793,"ป่าซาง":689,"เวียงป่าเป้า":797,"น่าน":673,"แพร่":572,"เชียงดาว":782,"กำแพงเพชร":400,"ตาก":460,"พิษณุโลก":420}};
+
+const $ = id => document.getElementById(id);
+const veh=$("vehicle"), org=$("origin"), dst=$("dest"), body=$("priceBody");
+const fmt=(n,d=2)=>isFinite(n)?n.toLocaleString("th-TH",{minimumFractionDigits:d,maximumFractionDigits:d}):"–";
+const TH_MONTHS=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const thDate=s=>{const [y,m,d]=s.split("-");return `${+d} ${TH_MONTHS[+m-1]} ${(+y)+543}`;};
+const pad=n=>String(n).padStart(2,"0");
+
+// ---- date inputs วัน/เดือน/ปี (ปีเก็บเป็น ค.ศ. ในค่า value, แสดงเป็น พ.ศ.) ----
+const ddI=$("dd"), mmS=$("mm"), yyS=$("yy");
+mmS.innerHTML=TH_MONTHS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join("");
+const YEARS=[2024,2025,2026,2027];   // ค.ศ.
+yyS.innerHTML=YEARS.map(y=>`<option value="${y}">${y+543}</option>`).join("");
+function getDateStr(){                 // -> "YYYY-MM-DD" หรือ "" ถ้ากรอกไม่ครบ
+  const d=parseInt(ddI.value,10), m=+mmS.value, y=+yyS.value;
+  if(!d||d<1||d>31||!m||!y) return "";
+  return `${y}-${pad(m)}-${pad(d)}`;
+}
+function setDate(iso){                  // iso "YYYY-MM-DD"
+  const [y,m,d]=iso.split("-");
+  ddI.value=+d; mmS.value=+m; yyS.value=+y;
+}
+
+// ---- ราคาน้ำมันแบบกำหนดเอง ----
+const manualOn=$("manualOn"), manualPrice=$("manualPrice");
+manualOn.addEventListener("change",()=>{
+  manualPrice.disabled=!manualOn.checked;
+  if(manualOn.checked){ if(!manualPrice.value) manualPrice.value=lastAutoPrice.toFixed(2); manualPrice.focus(); }
+  calc();
+});
+let lastAutoPrice=0;   // ราคาตามวันที่ล่าสุด (ไว้ prefill ช่อง manual)
+
+// ---- populate vehicle ----
+RATES.forEach(([n],i)=>{const o=document.createElement("option");o.value=i;o.textContent=n;veh.appendChild(o);});
+
+// ---- populate route ----
+const ORIGINS=Object.keys(ROUTES).sort((a,b)=>a.localeCompare(b,"th"));
+org.innerHTML=ORIGINS.map(o=>`<option>${o}</option>`).join("");
+function fillDests(){const cur=dst.value;const ds=Object.keys(ROUTES[org.value]||{}).sort((a,b)=>a.localeCompare(b,"th"));
+  dst.innerHTML=ds.map(d=>`<option>${d}</option>`).join("");if(ds.includes(cur))dst.value=cur;}
+function applyRouteDistance(){const d=ROUTES[org.value]?.[dst.value];if(d!=null)$("distance").value=d;}
+
+// ---- ช่องอัปเดตราคา ----
+const npDd=$("npDd"), npMm=$("npMm"), npYy=$("npYy"), npPrice=$("npPrice"), npMsg=$("npMsg");
+npMm.innerHTML=TH_MONTHS.map((m,i)=>`<option value="${i+1}">${m}</option>`).join("");
+[2024,2025,2026,2027].forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y+543;npYy.appendChild(o);});
+npMm.value=7; npYy.value=2026;   // ค่าเริ่มต้นชวนกรอก
+function flash(msg,color){ npMsg.textContent=msg; npMsg.style.color=color||"var(--green)";
+  setTimeout(()=>{ if(npMsg.textContent===msg) npMsg.textContent=""; },4000); }
+
+// ---- price table + lookup ----
+let activeIdx=-1;
+function renderPrices(){
+  activeIdx=-1; body.innerHTML="";
+  PRICES.forEach(([d,p],i)=>{
+    const isUser=Object.prototype.hasOwnProperty.call(USER_UPDATES,d);
+    const tr=document.createElement("tr");
+    if(isUser) tr.classList.add("userrow");
+    tr.dataset.i=i; tr.style.cursor="pointer";
+    tr.innerHTML=`<td>${thDate(d)}</td><td class="num">${p.toFixed(2)}</td>`+
+      `<td class="num">${isUser?'<span class="del-x" title="ลบราคาที่เพิ่มเอง">✕</span>':''}</td>`;
+    tr.onclick=()=>{setDate(d); calc();};
+    const del=tr.querySelector(".del-x");
+    if(del) del.onclick=e=>{e.stopPropagation(); removeUpdate(d);};
+    body.appendChild(tr);
+  });
+}
+function addOrUpdatePrice(iso,price){
+  USER_UPDATES[iso]=+price; saveUpdates(USER_UPDATES);
+  PRICES=buildPrices(); renderPrices();
+}
+function removeUpdate(iso){
+  delete USER_UPDATES[iso]; saveUpdates(USER_UPDATES);
+  PRICES=buildPrices(); renderPrices(); calc();
+  flash(`ลบราคาวันที่ ${thDate(iso)} แล้ว`);
+}
+$("npAdd").onclick=()=>{
+  const d=parseInt(npDd.value,10), m=+npMm.value, y=+npYy.value, p=parseFloat(npPrice.value);
+  if(!d||d<1||d>31){ flash("กรุณาระบุ ‘วัน’ ให้ถูกต้อง (1–31)","var(--clay-dark)"); return; }
+  if(!(p>0)){ flash("กรุณาระบุ ‘ราคา’ ให้มากกว่า 0","var(--clay-dark)"); return; }
+  const iso=`${y}-${pad(m)}-${pad(d)}`;
+  const existed=PRICES.some(r=>r[0]===iso);
+  addOrUpdatePrice(iso,p);
+  setDate(iso); calc();
+  npPrice.value="";
+  flash(`${existed?"อัปเดต":"เพิ่ม"}ราคา ${thDate(iso)} = ${p.toFixed(2)} บาท/ลิตร แล้ว ✓`);
+};
+$("npReset").onclick=()=>{
+  if(Object.keys(USER_UPDATES).length===0){ flash("ยังไม่มีราคาที่เพิ่มเอง","var(--ink-faint)"); return; }
+  USER_UPDATES={}; saveUpdates(USER_UPDATES); PRICES=buildPrices(); renderPrices(); calc();
+  flash("ล้างราคาที่เพิ่มเองทั้งหมดแล้ว");
+};
+// คืน index ของเรทที่ใช้กับ dateStr (เรทล่าสุดที่ วันที่มีผล <= dateStr)
+function priceIndexFor(dateStr){
+  let idx=-1;
+  for(let i=0;i<PRICES.length;i++){ if(PRICES[i][0]<=dateStr) idx=i; else break; }
+  return idx;
+}
+
+function calc(){
+  const dateStr=getDateStr();
+  const has=!!dateStr;
+  const i=has?priceIndexFor(dateStr):PRICES.length-1;   // ไม่ระบุวันที่ ใช้เรทล่าสุด
+  const idx = i<0?0:i;                                   // ก่อนช่วงข้อมูล ใช้เรทแรก
+  const [effDate,autoPrice]=PRICES[idx];
+  const nextDate = idx+1<PRICES.length ? PRICES[idx+1][0] : null;
+  lastAutoPrice=autoPrice;
+
+  const useManual = manualOn.checked && (parseFloat(manualPrice.value)||0)>0;
+  const price = useManual ? parseFloat(manualPrice.value) : autoPrice;
+
+  const vi=+veh.value, [vname,rate]=RATES[vi];
+  const trips=+$("trip").value;
+  const dist=(parseFloat($("distance").value)||0)*trips;
+  const revenue=parseFloat($("revenue").value)||0;
+  const liters=dist*rate;
+  const autoCost=liters*price;
+
+  // ---- ค่าน้ำมันรวม ตามโหมดที่เลือก ----
+  const mode=$("costMode").value;
+  let cost, normal=NaN, waste=NaN;
+  if(mode==="manual"){
+    cost=parseFloat($("costManual").value)||0;
+  }else if(mode==="split"){
+    normal=parseFloat($("costNormal").value)||0;
+    waste=parseFloat($("costWaste").value)||0;
+    cost=normal+waste;
+    $("splitSum").innerHTML=`ปกติ + สูญเปล่า = <b>${fmt(cost,2)}</b> บาท`;
+  }else{
+    cost=autoCost;
+  }
+  const costTag = mode==="manual" ? " · กำหนดเอง" : mode==="split" ? " · ปกติ+สูญเปล่า" : "";
+  $("rowNormal").style.display = mode==="split" ? "" : "none";
+  $("rowWaste").style.display  = mode==="split" ? "" : "none";
+  if(mode==="split"){
+    $("rNormal").textContent=`${fmt(normal,2)} บาท`;
+    $("rWaste").textContent=`${fmt(waste,2)} บาท (${cost>0?fmt(waste/cost*100,1):"0.0"}%)`;
+  }
+
+  const pctRev = revenue>0 ? cost/revenue*100 : NaN;
+  const perKm  = dist>0 ? cost/dist : NaN;
+  const net    = revenue-cost;
+
+  // route line
+  $("routeText").textContent=`${org.value} → ${dst.value}`;
+
+  // price note
+  let note;
+  if(useManual){
+    note = `กำหนดราคาเอง <b>${price.toFixed(2)}</b> บาท/ลิตร (ไม่ใช้ราคาตามวันที่)`;
+  }else if(!has){
+    note = `ยังไม่ได้ระบุวันที่ — ใช้เรทล่าสุด <b>${autoPrice.toFixed(2)}</b> บาท/ลิตร (${thDate(effDate)})`;
+  }else if(i<0){
+    note = `⚠ วันที่ก่อนช่วงข้อมูล ใช้เรทแรกสุด <b>${autoPrice.toFixed(2)}</b> บาท/ลิตร`;
+  }else{
+    note = `ใช้เรท <b>${autoPrice.toFixed(2)}</b> บาท/ลิตร (มีผล ${thDate(effDate)}${nextDate?` ถึงก่อน ${thDate(nextDate)}`:` เป็นต้นไป`})`;
+  }
+  $("priceNote").innerHTML=note;
+
+  // breakdown
+  $("rPrice").textContent=`${price.toFixed(2)} บาท/ลิตร${useManual?" · กำหนดเอง":""}`;
+  $("rRate").textContent=`${rate.toFixed(5)} ลิตร/กม.`;
+  $("rDist").textContent=`${fmt(dist,0)} กม.${trips===2?" (ไป–กลับ)":""}`;
+  $("rLiters").textContent=`${fmt(liters,2)} ลิตร`;
+  $("rCost").textContent=`${fmt(cost,2)} บาท${costTag}`;
+  $("rRev").textContent=`${fmt(revenue,2)} บาท`;
+
+  // KPI
+  $("kPct").textContent=fmt(pctRev,1);
+  $("kPerKm").textContent=fmt(perKm,2);
+  $("kNet").textContent=fmt(net,2);
+  $("kNetHint").textContent=`${fmt(revenue,0)} − ${fmt(cost,0)} บาท`;
+  $("kNet").parentElement.parentElement.classList.toggle("net", net>=0);
+
+  // highlight active price row
+  if(activeIdx!==idx){
+    [...body.children].forEach(tr=>tr.classList.toggle("active",+tr.dataset.i===idx));
+    const at=body.children[idx]; if(at) at.scrollIntoView({block:"nearest"});
+    activeIdx=idx;
+  }
+}
+
+// ---- โหมดค่าน้ำมันรวม ----
+function autoTotalNow(){
+  const dateStr=getDateStr(), has=!!dateStr;
+  const i=has?priceIndexFor(dateStr):PRICES.length-1;
+  const autoPrice=PRICES[i<0?0:i][1];
+  const price=(manualOn.checked && (parseFloat(manualPrice.value)||0)>0)?parseFloat(manualPrice.value):autoPrice;
+  const dist=(parseFloat($("distance").value)||0)*(+$("trip").value);
+  return dist*RATES[+veh.value][1]*price;
+}
+function updateModeUI(){
+  const m=$("costMode").value;
+  $("modeManual").style.display = m==="manual" ? "" : "none";
+  $("modeSplit").style.display  = m==="split" ? "" : "none";
+}
+$("costMode").addEventListener("change",()=>{
+  const m=$("costMode").value;
+  if(m==="manual" && !$("costManual").value) $("costManual").value=autoTotalNow().toFixed(0);
+  if(m==="split" && !$("costNormal").value) $("costNormal").value=autoTotalNow().toFixed(0);
+  updateModeUI(); calc();
+});
+
+["change","input"].forEach(ev=>["vehicle","distance","trip","revenue","dd","mm","yy","manualPrice","costManual","costNormal","costWaste"].forEach(id=>{const e=$(id);if(e)e.addEventListener(ev,calc);}));
+org.addEventListener("change",()=>{fillDests();applyRouteDistance();calc();});
+dst.addEventListener("change",()=>{applyRouteDistance();calc();});
+
+// init
+renderPrices();
+fillDests();
+updateModeUI();
+calc();
+</script>
+</body>
+</html>
